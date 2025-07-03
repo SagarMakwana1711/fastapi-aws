@@ -22,7 +22,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: dev
     container_name: pet_adoption_api_aws
     working_dir: /app
     volumes:
