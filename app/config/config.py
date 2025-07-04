@@ -12,8 +12,8 @@ class Settings(BaseSettings):
     db_user: str = os.getenv("RDS_USERNAME", os.getenv("DB_USER", "postgres"))
     db_password: str = os.getenv("RDS_PASSWORD", os.getenv("DB_PASSWORD", "postgres"))
     db_port: str = os.getenv("RDS_PORT", os.getenv("DB_PORT", "5432"))
-    secret_key: str
-    algorithm: str
+    secret_key: str = "test"
+    algorithm: str = "HS256"
 
     class Config:
         case_sensitive = False
