@@ -13,4 +13,4 @@ venv/
 .env
 
 *.log
-docker-compose*.env
+docker-compose*.env# force rebuild
