@@ -13,7 +13,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 COPY ./app ./app
 COPY alembic.ini .
-COPY ./migrations ./migrations
+COPY ./alembic ./alembic
 
 EXPOSE 80
 
