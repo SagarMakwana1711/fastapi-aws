@@ -7,6 +7,6 @@ app = FastAPI()
 
 @app.get("/")
 def index(db: Session = Depends(get_db)):
-    return { "message" : "Welcome to the fastapi" }
+    return { "message" : "Welcome to the fastapi after the deployment" }
 
 app.include_router(router)
