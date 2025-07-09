@@ -10,7 +10,5 @@ venv/
 .pytest_cache/
 
 
-.env
-
 *.log
 docker-compose*.env# force rebuild
