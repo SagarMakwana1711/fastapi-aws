@@ -9,19 +9,24 @@ phases:
       - pip install --upgrade pip
       - pip install -r requirements.txt
 
+      - echo "Logging in to Amazon ECR..."
+      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 145023132787.dkr.ecr.us-east-1.amazonaws.com
+
   pre_build:
     commands:
-      - echo "No DB or test setup required for this build."
+      - echo "Preparing for Docker image build..."
 
   build:
     commands:
-      - echo "Starting Docker build..."
+      - echo "Building Docker image..."
       - docker build -t fastapi-app .
+      - docker tag fastapi-app:latest 145023132787.dkr.ecr.us-east-1.amazonaws.com/fastapi-app-ecr:latest
 
   post_build:
     commands:
-      - echo "Build finished successfully on `date`"
+      - echo "Pushing image to ECR..."
+      - docker push 145023132787.dkr.ecr.us-east-1.amazonaws.com/fastapi-app-ecr:latest
+      - echo "Build and push complete."
 
 artifacts:
-  files:
-    - '**/*'
+  files: []
