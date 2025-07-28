@@ -1,9 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
+
 source "$(dirname "$0")/common.sh"
 
 # Fetch DB credentials from SSM Parameter Store
-readarray -t PARAMS < <(aws ssm get-parameters \
+declare -A PARAM_MAP
+
+while read -r name value; do
+  key=$(basename "$name" | tr 'a-z' 'A-Z')
+  PARAM_MAP["RDS_${key}"]="$value"
+done < <(aws ssm get-parameters \
   --region "$REGION" \
   --names \
     "/ecs/fastapi-demo/RDS_HOSTNAME" \
@@ -12,25 +18,21 @@ readarray -t PARAMS < <(aws ssm get-parameters \
     "/ecs/fastapi-demo/RDS_PASSWORD" \
     "/ecs/fastapi-demo/RDS_PORT" \
   --with-decryption \
-  --query 'Parameters[*].{Name:Name,Value:Value}' \
+  --query 'Parameters[*].[Name,Value]' \
   --output text)
 
-# Convert to uppercase env vars prefixed with RDS_
-for param in "${PARAMS[@]}"; do
-  name=$(echo "$param" | awk '{print $1}' | sed 's:.*/::' | tr 'a-z' 'A-Z')
-  value=$(echo "$param" | awk '{print $2}')
-  export "RDS_${name}=${value}"
-done
-
-
+# Export and validate environment variables
 for key in HOSTNAME DB_NAME USERNAME PASSWORD PORT; do
   var="RDS_${key}"
-  if [[ -z "${!var:-}" ]]; then
+  value="${PARAM_MAP[$var]:-}"
+  if [[ -z "$value" ]]; then
     echo "Missing required environment variable: $var"
     exit 1
   fi
+  export "$var=$value"
 done
 
+# Create log group if it doesn't exist
 aws logs create-log-group \
   --region "${REGION}" \
   --log-group-name "${LOG_GROUP}" \
@@ -45,6 +47,7 @@ docker run --rm \
   -e RDS_PORT="$RDS_PORT" \
   "${IMAGE}" alembic upgrade head
 
+# Start the actual application container
 docker run -d --name "${CONTAINER_NAME}" --restart unless-stopped \
   -p "${HOST_PORT}:${CONTAINER_PORT}" \
   --log-driver awslogs \
