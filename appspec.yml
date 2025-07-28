@@ -6,7 +6,27 @@ files:
     destination: /home/ec2-user/app
 
 hooks:
+  ApplicationStop:
+    - location: deploy/scripts/stop.sh
+      timeout: 120
+      runas: root
+
+  BeforeInstall:
+    - location: deploy/scripts/login_ecr.sh
+      timeout: 120
+      runas: root
+
   AfterInstall:
-    - location: scripts/deploy.sh
+    - location: deploy/scripts/pull.sh
       timeout: 300
-      runas: ec2-user
+      runas: root
+
+  ApplicationStart:
+    - location: deploy/scripts/start.sh
+      timeout: 300
+      runas: root
+
+  ValidateService:
+    - location: deploy/scripts/validate.sh
+      timeout: 180
+      runas: root

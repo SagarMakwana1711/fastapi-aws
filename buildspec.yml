@@ -1,32 +1,42 @@
 version: 0.2
 
+env:
+  variables:
+    REPOSITORY_URI: 145023132787.dkr.ecr.us-east-1.amazonaws.com/fastapi-app-ecr
+
 phases:
   install:
     runtime-versions:
       python: 3.12
     commands:
-      - echo "Installing Python dependencies..."
+      - echo "Installing dependencies..."
       - pip install --upgrade pip
       - pip install -r requirements.txt
-
       - echo "Logging in to Amazon ECR..."
-      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 145023132787.dkr.ecr.us-east-1.amazonaws.com
+      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $REPOSITORY_URI
 
   pre_build:
     commands:
-      - echo "Preparing for Docker image build..."
+      - echo "Preparing Docker image tag..."
+      - GIT_SHA=$(echo "$CODEBUILD_RESOLVED_SOURCE_VERSION" | cut -c1-7)
+      - IMAGE_TAG="${GIT_SHA}-${CODEBUILD_BUILD_NUMBER}"
+      - echo "IMAGE_TAG=${IMAGE_TAG}" > deploy/manifest.env
 
   build:
     commands:
       - echo "Building Docker image..."
       - docker build -t fastapi-app .
-      - docker tag fastapi-app:latest 145023132787.dkr.ecr.us-east-1.amazonaws.com/fastapi-app-ecr:latest
+      - docker tag fastapi-app:latest ${REPOSITORY_URI}:${IMAGE_TAG}
 
   post_build:
     commands:
       - echo "Pushing image to ECR..."
-      - docker push 145023132787.dkr.ecr.us-east-1.amazonaws.com/fastapi-app-ecr:latest
-      - echo "Build and push complete."
+      - docker push ${REPOSITORY_URI}:${IMAGE_TAG}
+      - chmod +x deploy/scripts/*.sh
 
 artifacts:
-  files: []
+  files:
+    - appspec.yml
+    - deploy/manifest.env
+    - deploy/manifest.json
+    - deploy/scripts/*
