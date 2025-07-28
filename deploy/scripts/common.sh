@@ -4,7 +4,6 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 echo "Looking for manifest at ${ROOT_DIR}/manifest.env"
 source "${ROOT_DIR}/manifest.env"
-
 REGION="us-east-1"
 APP_NAME="fastapi-app"
 CONTAINER_NAME="fastapi"
