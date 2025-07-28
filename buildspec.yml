@@ -21,7 +21,8 @@ phases:
       - GIT_SHA=$(echo "$CODEBUILD_RESOLVED_SOURCE_VERSION" | cut -c1-7)
       - IMAGE_TAG="${GIT_SHA}-${CODEBUILD_BUILD_NUMBER}"
       - mkdir -p deploy
-      - echo "IMAGE_TAG=${IMAGE_TAG}" > deploy/manifest.env
+      - echo "export IMAGE_TAG=${IMAGE_TAG}" > deploy/manifest.env
+      - echo "export REPOSITORY_URI=${REPOSITORY_URI}" >> deploy/manifest.env
 
   build:
     commands:
