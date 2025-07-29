@@ -40,5 +40,4 @@ artifacts:
   files:
     - appspec.yml
     - deploy/manifest.env
-    - deploy/manifest.json
     - deploy/scripts/*

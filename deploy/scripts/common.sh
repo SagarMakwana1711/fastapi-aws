@@ -17,23 +17,14 @@ CONTAINER_PORT_DEFAULT="80"
 echo "Looking for manifest at ${MANIFEST}"
 
 if [[ -f "$MANIFEST" ]]; then
-  while IFS= read -r line; do
-    [[ -z "${line:-}" ]] && continue
-    [[ "${line:0:1}" == "#" ]] && continue
-    line="${line#export }"
-    key="${line%%=*}"
-    val="${line#*=}"
-    val="${val%\"}"; val="${val#\"}"; val="${val%\'}"; val="${val#\'}"
-    export "${key}=${val}"
-  done < "$MANIFEST"
+  set -a
+  source "$MANIFEST"
+  set +a
 fi
 
-if [[ -z "${REGION:-}" ]]; then
-  token="$(curl -sS -X PUT "$IMDS_TOKEN_URL" -H "X-aws-ec2-metadata-token-ttl-seconds: 60" || true)"
-  meta="$(curl -sS -H "X-aws-ec2-metadata-token: ${token}" "$IMDS_DOC_URL" 2>/dev/null || true)"
-  REGION="$(awk -F'"' '/region/ {print $4}' <<<"$meta")"
-  REGION="${REGION:-$DEFAULT_REGION}"
-fi
+
+REGION="us-east-1"
+AWS_DEFAULT_REGION="us-east-1"
 
 : "${REPOSITORY_URI:?REPOSITORY_URI is required}"
 : "${IMAGE_TAG:?IMAGE_TAG is required}"
