@@ -1,31 +1,30 @@
 #!/usr/bin/env bash
 set -euo pipefail
-REGION="us-east-1"
+
 source "$(dirname "$0")/common.sh"
 
 SSM_PREFIX="/ecs/fastapi-demo"
-declare -r LOG_DRIVER="awslogs"
-declare -a PARAM_KEYS=("RDS_HOSTNAME" "RDS_DB_NAME" "RDS_USERNAME" "RDS_PASSWORD" "RDS_PORT")
+LOG_DRIVER="awslogs"
+PARAM_KEYS=("RDS_HOSTNAME" "RDS_DB_NAME" "RDS_USERNAME" "RDS_PASSWORD" "RDS_PORT")
 
-declare -A PARAM_MAP
+get_param() {
+  aws ssm get-parameter \
+    --region "$REGION" \
+    --name "$SSM_PREFIX/$1" \
+    --with-decryption \
+    --query 'Parameter.Value' \
+    --output text
+}
 
-while read -r name value; do
-  key="$(basename "$name")"
-  PARAM_MAP["$key"]="$value"
-done < <(aws ssm get-parameters \
-  --region "$REGION" \
-  --names $(printf "%s/%s " "$SSM_PREFIX" "${PARAM_KEYS[@]}") \
-  --with-decryption \
-  --query 'Parameters[*].[Name,Value]' \
-  --output text)
-
-for key in "${PARAM_KEYS[@]}"; do
-  val="${PARAM_MAP[$key]:-}"
-  if [[ -z "$val" ]]; then
-    echo "Missing required environment variable: $key"
+declare -A VAL
+for k in "${PARAM_KEYS[@]}"; do
+  v="$(get_param "$k" || true)"
+  if [[ -z "$v" || "$v" == "None" ]]; then
+    echo "Missing required environment variable: $k"
     exit 1
   fi
-  export "$key=$val"
+  VAL["$k"]="$v"
+  export "$k=${VAL[$k]}"
 done
 
 aws logs create-log-group \
@@ -33,13 +32,10 @@ aws logs create-log-group \
   --log-group-name "$LOG_GROUP" \
   2>/dev/null || true
 
-docker run --rm \
-  -e RDS_HOSTNAME="$RDS_HOSTNAME" \
-  -e RDS_DB_NAME="$RDS_DB_NAME" \
-  -e RDS_USERNAME="$RDS_USERNAME" \
-  -e RDS_PASSWORD="$RDS_PASSWORD" \
-  -e RDS_PORT="$RDS_PORT" \
-  "$IMAGE" alembic upgrade head
+ENV_ARGS=()
+for k in "${PARAM_KEYS[@]}"; do ENV_ARGS+=(-e "$k=${VAL[$k]}"); done
+
+docker run --rm "${ENV_ARGS[@]}" "$IMAGE" alembic upgrade head
 
 docker run -d --name "$CONTAINER_NAME" --restart unless-stopped \
   -p "$HOST_PORT:$CONTAINER_PORT" \
@@ -47,9 +43,5 @@ docker run -d --name "$CONTAINER_NAME" --restart unless-stopped \
   --log-opt awslogs-region="$REGION" \
   --log-opt awslogs-group="$LOG_GROUP" \
   --log-opt awslogs-stream="$CONTAINER_NAME" \
-  -e RDS_HOSTNAME="$RDS_HOSTNAME" \
-  -e RDS_DB_NAME="$RDS_DB_NAME" \
-  -e RDS_USERNAME="$RDS_USERNAME" \
-  -e RDS_PASSWORD="$RDS_PASSWORD" \
-  -e RDS_PORT="$RDS_PORT" \
+  "${ENV_ARGS[@]}" \
   "$IMAGE"
