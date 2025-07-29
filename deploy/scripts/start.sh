@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-
+REGION="us-east-1"
 source "$(dirname "$0")/common.sh"
 
 SSM_PREFIX="/ecs/fastapi-demo"
