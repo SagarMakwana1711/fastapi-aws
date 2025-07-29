@@ -31,6 +31,7 @@ phases:
       - echo "Building Docker image..."
       - docker build -t fastapi-app .
       - docker tag fastapi-app:latest ${REPOSITORY_URI}:${IMAGE_TAG}
+      - docker push ${REPOSITORY_URI}:latest
 
   post_build:
     commands:
