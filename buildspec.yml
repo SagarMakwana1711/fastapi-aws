@@ -31,12 +31,13 @@ phases:
       - echo "Building Docker image..."
       - docker build -t fastapi-app .
       - docker tag fastapi-app:latest ${REPOSITORY_URI}:${IMAGE_TAG}
-      - docker push ${REPOSITORY_URI}:latest
+      - docker tag fastapi-app:latest ${REPOSITORY_URI}:latest
 
   post_build:
     commands:
       - echo "Pushing image to ECR..."
       - docker push ${REPOSITORY_URI}:${IMAGE_TAG}
+      - docker push ${REPOSITORY_URI}:latest
       - chmod +x deploy/scripts/*.sh
 
 artifacts:
