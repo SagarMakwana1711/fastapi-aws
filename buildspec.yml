@@ -23,6 +23,8 @@ phases:
       - mkdir -p deploy
       - echo "export IMAGE_TAG=${IMAGE_TAG}" > deploy/manifest.env
       - echo "export REPOSITORY_URI=${REPOSITORY_URI}" >> deploy/manifest.env
+      - echo "Generating imagedefinitions.json..."
+      - echo "[{\"name\":\"fastapi-app\",\"imageUri\":\"${REPOSITORY_URI}:${IMAGE_TAG}\"}]" > imagedefinitions.json
 
   build:
     commands:
