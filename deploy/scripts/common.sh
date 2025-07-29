@@ -3,9 +3,11 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MANIFEST="${ROOT_DIR}/manifest.env"
+
 IMDS_HOST="http://169.254.169.254"
 IMDS_TOKEN_URL="${IMDS_HOST}/latest/api/token"
 IMDS_DOC_URL="${IMDS_HOST}/latest/dynamic/instance-identity/document"
+
 DEFAULT_REGION="us-east-1"
 LOG_GROUP_DEFAULT="/fastapi/app"
 CONTAINER_NAME_DEFAULT="fastapi"
@@ -41,7 +43,8 @@ fi
 : "${LOG_GROUP:=$LOG_GROUP_DEFAULT}"
 
 IMAGE="${REPOSITORY_URI}:${IMAGE_TAG}"
+REGISTRY="${REPOSITORY_URI%%/*}"
 
 export REGION
 export AWS_DEFAULT_REGION="$REGION"
-export IMAGE CONTAINER_NAME HOST_PORT CONTAINER_PORT LOG_GROUP
+export IMAGE REGISTRY CONTAINER_NAME HOST_PORT CONTAINER_PORT LOG_GROUP
