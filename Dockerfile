@@ -30,7 +30,7 @@ COPY alembic.ini .
 COPY ./alembic ./alembic
 
 RUN useradd -m appuser
-USER appuser
+USER root
 
 EXPOSE 80
 
