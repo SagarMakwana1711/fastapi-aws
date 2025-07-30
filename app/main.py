@@ -7,6 +7,6 @@ app = FastAPI()
 
 @app.get("/")
 def index(db: Session = Depends(get_db)):
-    return { "message" : "Welcome to the fastapi after the deployment, This app is now deployed to ec2 and the ECS fargate." }
+    return { "message" : "Welcome to the fastapi after the deployment." }
 
 app.include_router(router)
