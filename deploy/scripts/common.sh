@@ -11,8 +11,8 @@ IMDS_DOC_URL="${IMDS_HOST}/latest/dynamic/instance-identity/document"
 DEFAULT_REGION="us-east-1"
 LOG_GROUP_DEFAULT="/fastapi/app"
 CONTAINER_NAME_DEFAULT="fastapi"
-HOST_PORT_DEFAULT="80"
-CONTAINER_PORT_DEFAULT="80"
+HOST_PORT_DEFAULT="8080"
+CONTAINER_PORT_DEFAULT="8080"
 
 echo "Looking for manifest at ${MANIFEST}"
 
