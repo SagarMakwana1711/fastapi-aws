@@ -5,7 +5,6 @@
   "cpu": "256",
   "memory": "1024",
   "executionRoleArn": "arn:aws:iam::145023132787:role/ecsTaskExecutionRole",
-  "taskRoleArn": "arn:aws:iam::145023132787:role/ecsTaskExecutionRole",
   "containerDefinitions": [
     {
       "name": "fastapi-container",
