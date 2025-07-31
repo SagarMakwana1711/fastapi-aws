@@ -1,21 +1,52 @@
 version: 0.2
+
 env:
   variables:
-    IMAGE_REPO: fastapi-app-ecr
+    REPOSITORY_URI: 145023132787.dkr.ecr.us-east-1.amazonaws.com/fastapi-app-ecr
+
 phases:
+  install:
+    runtime-versions:
+      python: 3.12
+    commands:
+      - echo "Installing dependencies..."
+      - pip install --upgrade pip
+      - pip install -r requirements.txt
+
   pre_build:
     commands:
-      - COMMIT_SHORT=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c1-10)
-      - IMAGE_TAG=${COMMIT_SHORT:-latest}
-      - IMAGE_URI="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO:$IMAGE_TAG"
-      - aws ecr get-login-password --region "$AWS_DEFAULT_REGION" | docker login --username AWS --password-stdin "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com"
+      - set -e
+      - echo "Deriving variables..."
+      - REGISTRY=$(echo "$REPOSITORY_URI" | cut -d'/' -f1)
+      - GIT_SHA=$(echo "${CODEBUILD_RESOLVED_SOURCE_VERSION:-manual}" | cut -c1-7)
+      - IMAGE_TAG="${GIT_SHA}-${CODEBUILD_BUILD_NUMBER}"
+      - IMAGE_URI="${REPOSITORY_URI}:${IMAGE_TAG}"
+      - mkdir -p deploy
+      - printf 'export IMAGE_TAG=%s\n' "${IMAGE_TAG}" > deploy/manifest.env
+      - printf 'export REPOSITORY_URI=%s\n' "${REPOSITORY_URI}" >> deploy/manifest.env
+      - echo "Logging in to Amazon ECR..."
+      - aws ecr get-login-password --region "${AWS_DEFAULT_REGION}" | docker login --username AWS --password-stdin "${REGISTRY}"
+
   build:
     commands:
-      - docker build -t "$IMAGE_URI" .
-      - docker push "$IMAGE_URI"
-      - jq --arg IMG "$IMAGE_URI" '(.containerDefinitions[] | select(.name=="fastapi-container") | .image) = $IMG' taskdef-template.json > taskdef.json
+      - echo "Building Docker image..."
+      - docker build -t fastapi-app .
+      - docker tag fastapi-app:latest "${IMAGE_URI}"
+      - docker tag fastapi-app:latest "${REPOSITORY_URI}:latest"
+
+  post_build:
+    commands:
+      - echo "Pushing image to ECR..."
+      - docker push "${IMAGE_URI}"
+      - docker push "${REPOSITORY_URI}:latest"
+      - echo "Generating final taskdef.json from template..."
+      - jq --arg IMG "${IMAGE_URI}" '(.containerDefinitions[] | select(.name=="fastapi-container") | .image) = $IMG' taskdef-template.json > taskdef.json
+      - chmod +x deploy/scripts/*.sh || true
+
 artifacts:
   files:
     - appspec.yaml
+    - deploy/manifest.env
+    - deploy/scripts/*
     - taskdef.json
   discard-paths: yes
