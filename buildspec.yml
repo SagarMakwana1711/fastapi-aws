@@ -25,7 +25,8 @@ phases:
       - echo "export REPOSITORY_URI=${REPOSITORY_URI}" >> deploy/manifest.env
       - echo "Generating imagedefinitions.json..."
       - echo "[{\"name\":\"fastapi-container\",\"imageUri\":\"${REPOSITORY_URI}:${IMAGE_TAG}\"}]" > imagedefinitions.json
-
+      - echo "Generating imageDetail.json..."
+      - printf '{"ImageURI":"%s"}' "${REPOSITORY_URI}:${IMAGE_TAG}" > imageDetail.json
   build:
     commands:
       - echo "Building Docker image..."
@@ -46,3 +47,5 @@ artifacts:
     - deploy/manifest.env
     - deploy/scripts/*
     - imagedefinitions.json
+    - imageDetail.json
+    - taskdef.json

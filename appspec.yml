@@ -3,7 +3,7 @@ Resources:
   - TargetService:
       Type: AWS::ECS::Service
       Properties:
-        TaskDefinition: "REPLACE_ME"
+        TaskDefinition: "taskdef.json"
         LoadBalancerInfo:
           ContainerName: "fastapi-container"
           ContainerPort: 8080

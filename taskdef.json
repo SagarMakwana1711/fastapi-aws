@@ -1,21 +1,22 @@
 {
-  "family": "fastapi-task",
+  "family": "fastapi-demo",
   "networkMode": "awsvpc",
   "requiresCompatibilities": ["FARGATE"],
   "cpu": "256",
-  "memory": "512",
+  "memory": "1024",
   "executionRoleArn": "arn:aws:iam::145023132787:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::145023132787:role/ecsTaskExecutionRole",
   "containerDefinitions": [
     {
       "name": "fastapi-container",
-      "image": "145023132787.dkr.ecr.us-east-1.amazonaws.com/fastapi-app-ecr:latest",
-      "essential": true,
+      "image": "IMAGE1_NAME",
       "portMappings": [
         {
           "containerPort": 8080,
           "protocol": "tcp"
         }
-      ]
+      ],
+      "essential": true
     }
   ]
 }
