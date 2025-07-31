@@ -1,50 +1,21 @@
 version: 0.2
-
 env:
   variables:
-    REPOSITORY_URI: 145023132787.dkr.ecr.us-east-1.amazonaws.com/fastapi-app-ecr
-
+    IMAGE_REPO: fastapi-app-ecr
 phases:
-  install:
-    runtime-versions:
-      python: 3.12
-    commands:
-      - echo "Installing dependencies..."
-      - pip install --upgrade pip
-      - pip install -r requirements.txt
-      - echo "Logging in to Amazon ECR..."
-      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $REPOSITORY_URI
-
   pre_build:
     commands:
-      - echo "Preparing Docker image tag..."
-      - GIT_SHA=$(echo "$CODEBUILD_RESOLVED_SOURCE_VERSION" | cut -c1-7)
-      - IMAGE_TAG="${GIT_SHA}-${CODEBUILD_BUILD_NUMBER}"
-      - mkdir -p deploy
-      - echo "export IMAGE_TAG=${IMAGE_TAG}" > deploy/manifest.env
-      - echo "export REPOSITORY_URI=${REPOSITORY_URI}" >> deploy/manifest.env
-      - echo "Generating imagedefinitions.json..."
-      - echo "Generating imageDetail.json..."
-      - printf '{"ImageURI":"%s"}' "${REPOSITORY_URI}:${IMAGE_TAG}" > imageDetail.json
-
+      - COMMIT_SHORT=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c1-10)
+      - IMAGE_TAG=${COMMIT_SHORT:-latest}
+      - IMAGE_URI="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO:$IMAGE_TAG"
+      - aws ecr get-login-password --region "$AWS_DEFAULT_REGION" | docker login --username AWS --password-stdin "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com"
   build:
     commands:
-      - echo "Building Docker image..."
-      - docker build -t fastapi-app .
-      - docker tag fastapi-app:latest ${REPOSITORY_URI}:${IMAGE_TAG}
-      - docker tag fastapi-app:latest ${REPOSITORY_URI}:latest
-
-  post_build:
-    commands:
-      - echo "Pushing image to ECR..."
-      - docker push ${REPOSITORY_URI}:${IMAGE_TAG}
-      - docker push ${REPOSITORY_URI}:latest
-      - chmod +x deploy/scripts/*.sh || true
-
+      - docker build -t "$IMAGE_URI" .
+      - docker push "$IMAGE_URI"
+      - jq --arg IMG "$IMAGE_URI" '(.containerDefinitions[] | select(.name=="fastapi-container") | .image) = $IMG' taskdef-template.json > taskdef.json
 artifacts:
   files:
     - appspec.yaml
-    - deploy/manifest.env
-    - deploy/scripts/*
-    - imageDetail.json
     - taskdef.json
+  discard-paths: yes
