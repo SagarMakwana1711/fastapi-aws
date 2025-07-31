@@ -7,6 +7,7 @@ def create_payload():
     }
 
 
+
 def test_create_pet(auth_client):
     payload = create_payload()
     res = auth_client.post("/pets/", json=payload)
