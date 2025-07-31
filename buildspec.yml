@@ -27,6 +27,7 @@ phases:
       - echo "[{\"name\":\"fastapi-container\",\"imageUri\":\"${REPOSITORY_URI}:${IMAGE_TAG}\"}]" > imagedefinitions.json
       - echo "Generating imageDetail.json..."
       - printf '{"ImageURI":"%s"}' "${REPOSITORY_URI}:${IMAGE_TAG}" > imageDetail.json
+
   build:
     commands:
       - echo "Building Docker image..."
@@ -39,10 +40,7 @@ phases:
       - echo "Pushing image to ECR..."
       - docker push ${REPOSITORY_URI}:${IMAGE_TAG}
       - docker push ${REPOSITORY_URI}:latest
-      - echo "Replacing IMAGE1_NAME in taskdef.json with real image URI..."
-      - sed "s|IMAGE1_NAME|${REPOSITORY_URI}:${IMAGE_TAG}|g" taskdef.json > taskdef-real.json
-      - mv taskdef-real.json taskdef.json
-      - chmod +x deploy/scripts/*.sh
+      - chmod +x deploy/scripts/*.sh || true
 
 artifacts:
   files:
