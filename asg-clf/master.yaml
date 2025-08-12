@@ -1,0 +1,62 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Master stack with nested templates for Security + ALB
+
+Parameters:
+  DefaultVPC:
+    Type: AWS::EC2::VPC::Id
+    Description: Select your default VPC
+  SubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Subnets for the ALB (use public subnets for simple testing)
+  BucketName:
+    Type: String
+    Description: S3 bucket name containing the nested templates
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Existing EC2 Key Pair to enable SSH access
+
+Resources:
+  SecurityStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "https://s3.${AWS::Region}.amazonaws.com/${BucketName}/nested/security.yaml"
+      Parameters:
+        DefaultVPC: !Ref DefaultVPC
+
+  ALBStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "https://s3.${AWS::Region}.amazonaws.com/${BucketName}/nested/alb.yaml"
+      Parameters:
+        VpcId: !Ref DefaultVPC
+        SubnetIds: !Join [ ",", !Ref SubnetIds ]
+        ALBSecurityGroupId: !GetAtt SecurityStack.Outputs.ALBSecurityGroupId
+        HttpPort: "80"
+
+  ComputeStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "https://s3.${AWS::Region}.amazonaws.com/${BucketName}/nested/compute-asg.yaml"
+      Parameters:
+        SubnetIds: !Join [ ",", !Ref SubnetIds ]
+        InstanceSecurityGroupId: !GetAtt SecurityStack.Outputs.InstanceSecurityGroupId
+        TargetGroupArn: !GetAtt ALBStack.Outputs.TargetGroupArn
+        InstanceType: "t3.micro"
+        DesiredCapacity: "1"
+        MinSize: "1"
+        MaxSize: "2"
+        KeyName: !Ref KeyName
+
+Outputs:
+  ALBDNSName:
+    Description: DNS name of the Application Load Balancer
+    Value: !GetAtt ALBStack.Outputs.LoadBalancerDNSName
+  TargetGroupArn:
+    Description: ARN of the Target Group
+    Value: !GetAtt ALBStack.Outputs.TargetGroupArn
+  ALBSecurityGroupId:
+    Description: ALB Security Group ID
+    Value: !GetAtt SecurityStack.Outputs.ALBSecurityGroupId
+  AutoScalingGroupName:
+    Description: Name of the ASG
+    Value: !GetAtt ComputeStack.Outputs.AutoScalingGroupName

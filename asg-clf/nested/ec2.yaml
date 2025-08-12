@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Simple Free Tier EC2 instance with SSH access
+Description: EC2 Instance using existing Security Group
 
 Parameters:
   InstanceType:
@@ -15,33 +15,24 @@ Parameters:
     Type: AWS::EC2::KeyPair::KeyName
     Description: Name of an existing EC2 KeyPair to enable SSH access
 
+  SecurityGroupId:
+    Type: AWS::EC2::SecurityGroup::Id
+    Description: Existing Security Group ID for the instance
+
+  LatestAmazonLinux2AMI:
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
+    Description: SSM path to the latest Amazon Linux 2 AMI
+
 Resources:
-  MySecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: Allow SSH access
-      VpcId: !Ref DefaultVPC
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 22
-          ToPort: 22
-          CidrIp: 0.0.0.0/0
-
-  DefaultVPC:
-    Type: AWS::EC2::VPC::Id
-
   MyEC2Instance:
     Type: AWS::EC2::Instance
     Properties:
       InstanceType: !Ref InstanceType
       SecurityGroupIds:
-        - !Ref MySecurityGroup
+        - !Ref SecurityGroupId
       ImageId: !Ref LatestAmazonLinux2AMI
       KeyName: !Ref KeyPairName
-
-  LatestAmazonLinux2AMI:
-    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
-    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
 
 Outputs:
   InstanceId:
@@ -49,5 +40,9 @@ Outputs:
     Value: !Ref MyEC2Instance
 
   PublicIP:
-    Description: Public IP address of the EC2 instance
+    Description: Public IPv4 address of the EC2 instance
     Value: !GetAtt MyEC2Instance.PublicIp
+
+  PrivateIP:
+    Description: Private IPv4 address of the EC2 instance
+    Value: !GetAtt MyEC2Instance.PrivateIp
