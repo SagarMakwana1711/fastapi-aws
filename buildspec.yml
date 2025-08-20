@@ -49,4 +49,3 @@ artifacts:
     - deploy/manifest.env
     - deploy/scripts/*
     - taskdef.json
-  discard-paths: yes
